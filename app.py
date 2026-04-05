@@ -1319,7 +1319,8 @@ elif page == "🔐 Gerenciar Usuários":
                 col_a, col_b, col_c = st.columns([3, 2, 1])
                 with col_a:
                     st.markdown(f"👤 **{u['name']}** &nbsp; `@{u['username']}`")
-                    st.caption(f"✉️ {u['email']} &nbsp;&nbsp; 📅 Criado em {u['created_at'][:10]}")
+                    created_str = str(u['created_at'])[:10] if u.get('created_at') else 'N/A'
+                    st.caption(f"✉️ {u['email']} &nbsp;&nbsp; 📅 Criado em {created_str}")
                 with col_b:
                     st.markdown(f"🛡️ Papel: **{u['role'].upper()}**")
                     email_icon = "📧" if u.get('receber_email') else "🔕"
