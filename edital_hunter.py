@@ -320,6 +320,61 @@ def save_results(editais: List[Dict], filepath: str = "/home/ubuntu/finep_copilo
     print(f"💾 Resultados salvos em: {filepath}")
     return filepath
 
+def run_edital_hunt_from_db() -> List[Dict]:
+    """
+    Variánte que usa as fontes do banco de dados persistente (fontes_db.json)
+    em vez das fontes hardcoded. Permite que o usuário adicione/remova fontes.
+    """
+    try:
+        from fontes_manager import get_fontes_ativas
+        fontes_ativas = get_fontes_ativas()
+    except ImportError:
+        print("⚠️  fontes_manager não disponível, usando fontes padrão")
+        return run_edital_hunt()
+
+    if not fontes_ativas:
+        print("⚠️  Nenhuma fonte ativa no banco. Usando fontes padrão.")
+        return run_edital_hunt()
+
+    print(f"🔍 Iniciando busca proativa de editais (banco de dados)...")
+    print(f"📅 Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    print(f"📊 Fontes ativas: {len(fontes_ativas)}")
+    print("=" * 60)
+
+    all_editais = []
+
+    for fonte_db in fontes_ativas:
+        fonte = {
+            "nome": fonte_db["nome"],
+            "url": fonte_db["url"],
+            "tipo": fonte_db.get("tipo", "outro"),
+            "pais": fonte_db.get("pais", "Brasil")
+        }
+        print(f"\n📡 Buscando: {fonte['nome']} ({fonte['pais']})...")
+
+        html = fetch_page(fonte["url"])
+        if html.startswith("ERRO"):
+            print(f"  ❌ {html}")
+            continue
+
+        page_text = extract_text_from_html(html)
+        if len(page_text) < 100:
+            print(f"  ⚠️  Conteúdo insuficiente extraído")
+            continue
+
+        editais = search_editais_with_ai(fonte, page_text)
+        print(f"  ✅ {len(editais)} edital(is) identificado(s)")
+
+        for edital in editais:
+            scored = score_edital_for_agnest(edital)
+            all_editais.append(scored)
+            time.sleep(0.3)
+
+    all_editais.sort(key=lambda x: x.get("score_aderencia", 0), reverse=True)
+    print(f"\n✅ Busca concluída! {len(all_editais)} editais encontrados e analisados.")
+    return all_editais
+
+
 if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()

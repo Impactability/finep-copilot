@@ -1,0 +1,260 @@
+{
+  "data_busca": "2026-04-05T10:53:22.458077",
+  "total_editais": 6,
+  "perfil_agnest": {
+    "nome": "Agnest Farm Lab",
+    "tipo": "Hub de Inovação Aberta - Agricultura Digital e Sustentável",
+    "localizacao": "Jaguariúna, SP, Brasil",
+    "parceiros_principais": [
+      "EMBRAPA",
+      "Banco do Brasil"
+    ],
+    "verticais": [
+      "Inteligência Artificial para Agro",
+      "IoT (Internet das Coisas)",
+      "Robótica e Automação Agrícola",
+      "Software para suporte e tomada de decisão",
+      "Sistemas de produção sustentáveis",
+      "Bioinsumos",
+      "Sensoriamento remoto",
+      "Manejo integrado de pragas e doenças"
+    ],
+    "palavras_chave": [
+      "agtech",
+      "agro",
+      "agricultura digital",
+      "agricultura sustentável",
+      "bioinsumos",
+      "precision agriculture",
+      "smart farming",
+      "food tech",
+      "agronegócio",
+      "inovação agrícola",
+      "sensoriamento",
+      "IoT agro",
+      "sustainable agriculture",
+      "agroecology",
+      "food security",
+      "digital farming",
+      "agri-food",
+      "crop protection",
+      "soil health",
+      "water management",
+      "climate smart agriculture"
+    ],
+    "trl_habitual": "4-7",
+    "porte": "Pequena/Média Empresa",
+    "foco_geografico": "Brasil + Internacional"
+  },
+  "editais": [
+    {
+      "titulo": "Finep Mais Inovação Brasil – Rodada 2 – Cadeias Agroindustriais Sustentáveis",
+      "descricao": "Chamada para projetos inovadores focados em cadeias agroindustriais sustentáveis, incluindo agricultura digital, sustentabilidade e tecnologias aplicadas ao agronegócio.",
+      "prazo": "Não informado",
+      "valor_estimado": "Não informado",
+      "url": "https://www.finep.gov.br/chamadas-publicas",
+      "tipo": "financiamento",
+      "pais": "Brasil",
+      "fonte": "FINEP - Chamadas Públicas",
+      "relevancia_agro": "alta",
+      "palavras_chave_identificadas": [
+        "agricultura",
+        "sustentabilidade",
+        "inovação",
+        "cadeias agroindustriais"
+      ],
+      "score_aderencia": 9,
+      "classificacao": "Alta Aderência",
+      "cor": "verde",
+      "pode_entrar_sozinha": true,
+      "precisa_parceiro": false,
+      "tipo_parceiro_necessario": "não precisa",
+      "pontos_fortes": [
+        "Foco em agricultura digital e sustentabilidade alinhado ao edital",
+        "Infraestrutura de testes em ambiente real (Farm Lab) que agrega valor prático",
+        "Parceria com ICT relevante (EMBRAPA) que fortalece a capacidade técnica"
+      ],
+      "gaps": [
+        "Prazo e valor estimado não informados, dificultando planejamento detalhado",
+        "Descrição do edital é genérica, podendo exigir maior detalhamento do projeto"
+      ],
+      "acao_recomendada": "Submeter imediatamente",
+      "justificativa": "O perfil da Agnest Farm Lab está fortemente alinhado com o foco do edital em cadeias agroindustriais sustentáveis e agricultura digital, possuindo infraestrutura e parcerias que garantem competitividade. Apesar da falta de informações sobre prazo e valor, a aderência técnica e estratégica é alta, recomendando a submissão imediata."
+    },
+    {
+      "titulo": "Fundo Nacional de Desenvolvimento Científico e Tecnológico – FNDCT/Subvenção Econômica",
+      "descricao": "Financiamento não reembolsável para projetos de inovação tecnológica, com foco em sustentabilidade e desenvolvimento científico, disponível até o limite de R$ 5.000.000,00 a R$ 10.000.000,00.",
+      "prazo": "Não informado",
+      "valor_estimado": "Até R$ 10.000.000,00",
+      "url": "https://www.finep.gov.br/chamadas-publicas",
+      "tipo": "subvenção",
+      "pais": "Brasil",
+      "fonte": "FINEP - Chamadas Públicas",
+      "relevancia_agro": "alta",
+      "palavras_chave_identificadas": [
+        "subvenção econômica",
+        "FNDCT",
+        "inovação",
+        "sustentabilidade"
+      ],
+      "score_aderencia": 9,
+      "classificacao": "Alta Aderência",
+      "cor": "verde",
+      "pode_entrar_sozinha": true,
+      "precisa_parceiro": false,
+      "tipo_parceiro_necessario": "não precisa",
+      "pontos_fortes": [
+        "Foco em inovação tecnológica e sustentabilidade alinhado ao edital",
+        "Expertise em agricultura digital com verticais como IA, IoT e sustentabilidade",
+        "Infraestrutura de testes em ambiente real (Farm Lab) que agrega valor ao projeto"
+      ],
+      "gaps": [
+        "Prazo do edital não informado, dificultando planejamento detalhado",
+        "Valor estimado alto, pode demandar maior capacidade financeira e operacional"
+      ],
+      "acao_recomendada": "Submeter imediatamente",
+      "justificativa": "O perfil da Agnest Farm Lab está fortemente alinhado com o foco do edital em inovação tecnológica e sustentabilidade na agricultura. A infraestrutura e expertise da Agnest permitem participação direta e competitiva, apesar da ausência de prazo definido."
+    },
+    {
+      "titulo": "Cadeias Socioprodutivas da Agricultura Familiar e Sistemas Agroalimentares - Empresas",
+      "descricao": "Chamada voltada para empresas que atuam em cadeias produtivas da agricultura familiar e sistemas agroalimentares, com foco em inovação e sustentabilidade.",
+      "prazo": "Não informado",
+      "valor_estimado": "Não informado",
+      "url": "https://www.finep.gov.br/chamadas-publicas",
+      "tipo": "financiamento",
+      "pais": "Brasil",
+      "fonte": "FINEP - Chamadas Públicas",
+      "relevancia_agro": "alta",
+      "palavras_chave_identificadas": [
+        "agricultura familiar",
+        "sistemas agroalimentares",
+        "inovação",
+        "sustentabilidade"
+      ],
+      "score_aderencia": 9,
+      "classificacao": "Alta Aderência",
+      "cor": "verde",
+      "pode_entrar_sozinha": true,
+      "precisa_parceiro": false,
+      "tipo_parceiro_necessario": "não precisa",
+      "pontos_fortes": [
+        "Foco em agricultura digital e sustentável alinhado com agricultura familiar e sustentabilidade do edital",
+        "Infraestrutura de testes em ambiente real (Farm Lab) que favorece inovação prática",
+        "Parceria com ICT relevante (EMBRAPA) que fortalece capacidade técnica e inovação"
+      ],
+      "gaps": [
+        "Prazo e valor não informados, dificultando planejamento detalhado",
+        "Descrição do edital genérica, sem detalhamento específico de requisitos técnicos ou tecnológicos"
+      ],
+      "acao_recomendada": "Submeter imediatamente",
+      "justificativa": "O perfil da Agnest Farm Lab está fortemente alinhado com os temas centrais do edital, especialmente em inovação, sustentabilidade e agricultura familiar. A infraestrutura e parcerias existentes permitem participação autônoma e competitiva, tornando a submissão recomendada sem necessidade imediata de parceiros adicionais."
+    },
+    {
+      "titulo": "EIC Accelerator Open 2026",
+      "descricao": "Programa de financiamento para start-ups e PMEs inovadoras com produtos, serviços ou modelos de negócio disruptivos, focado em tecnologias de TRL 6-8, incluindo agricultura digital, sustentabilidade, IA, IoT e robótica. Oferece subvenção e investimento em equity para apoiar o desenvolvimento e escala rápida de inovações.",
+      "prazo": "Submissão contínua com avaliações mensais (primeira terça-feira do mês, 17h horário de Bruxelas)",
+      "valor_estimado": "Até 2,5 milhões de euros em subvenção e até 10 milhões de euros em investimento de equity",
+      "url": "https://eic.ec.europa.eu/eic-funding-opportunities/eic-accelerator_en",
+      "tipo": "subvenção | financiamento",
+      "pais": "União Europeia",
+      "fonte": "EIC Accelerator - EU",
+      "relevancia_agro": "alta",
+      "palavras_chave_identificadas": [
+        "agricultura digital",
+        "sustentabilidade",
+        "IA",
+        "IoT",
+        "robótica",
+        "bioinsumos",
+        "sensoriamento"
+      ],
+      "score_aderencia": 9,
+      "classificacao": "Alta Aderência",
+      "cor": "verde",
+      "pode_entrar_sozinha": false,
+      "precisa_parceiro": true,
+      "tipo_parceiro_necessario": "ICT",
+      "pontos_fortes": [
+        "Alinhamento claro com agricultura digital e sustentabilidade",
+        "Expertise nas verticais IA, IoT, robótica, bioinsumos e sensoriamento",
+        "Infraestrutura de testes em ambiente real (Farm Lab)",
+        "Parceria estratégica com EMBRAPA, importante ICT"
+      ],
+      "gaps": [
+        "Localização no Brasil, enquanto o edital é para União Europeia",
+        "Necessidade de parceiro europeu para atender requisitos territoriais e regulatórios"
+      ],
+      "acao_recomendada": "Buscar parceiro e submeter",
+      "justificativa": "O perfil da Agnest Farm Lab está fortemente alinhado com as áreas prioritárias do edital, especialmente em agricultura digital e sustentabilidade. Contudo, a participação requer parceria com uma ICT europeia para cumprir os critérios territoriais, tornando essencial buscar parceiro local antes da submissão."
+    },
+    {
+      "titulo": "Programa Mobilidade Verde e Inovação (PROGRAMA MOVER)",
+      "descricao": "Programa de apoio à inovação com foco em sustentabilidade e tecnologias verdes, que pode incluir soluções para o agronegócio sustentável e digital.",
+      "prazo": "Não informado",
+      "valor_estimado": "Não informado",
+      "url": "https://www.finep.gov.br/chamadas-publicas",
+      "tipo": "financiamento",
+      "pais": "Brasil",
+      "fonte": "FINEP - Chamadas Públicas",
+      "relevancia_agro": "media",
+      "palavras_chave_identificadas": [
+        "mobilidade verde",
+        "inovação",
+        "sustentabilidade"
+      ],
+      "score_aderencia": 8,
+      "classificacao": "Alta Aderência",
+      "cor": "verde",
+      "pode_entrar_sozinha": true,
+      "precisa_parceiro": false,
+      "tipo_parceiro_necessario": "não precisa",
+      "pontos_fortes": [
+        "Foco em sustentabilidade e tecnologias verdes alinhado com agricultura digital e sustentável",
+        "Infraestrutura de testes em ambiente real (Farm Lab) que favorece desenvolvimento e validação de soluções",
+        "Expertise em verticais como IA, IoT e sensoriamento remoto que são relevantes para inovação no agronegócio"
+      ],
+      "gaps": [
+        "Prazo e valor estimado não informados, dificultando planejamento estratégico",
+        "Relevância agro considerada média, o que pode indicar menor foco exclusivo no agronegócio"
+      ],
+      "acao_recomendada": "Submeter imediatamente",
+      "justificativa": "O edital tem forte alinhamento com o perfil da Agnest Farm Lab, especialmente pela ênfase em sustentabilidade e inovação tecnológica para o agronegócio. A ausência de informações sobre prazo e valor não impede a participação, e a infraestrutura e expertise da Agnest permitem atuação independente."
+    },
+    {
+      "titulo": "EIC Accelerator Challenges 2026",
+      "descricao": "Chamadas específicas para projetos que se enquadrem em tópicos pré-definidos pelo EIC, com foco em inovações de alto impacto e risco, incluindo áreas relacionadas à sustentabilidade e tecnologias digitais aplicadas ao agronegócio. Oferece apoio financeiro e serviços de aceleração para escalar rapidamente soluções inovadoras.",
+      "prazo": "Datas específicas conforme os desafios publicados, com orçamento reservado para 2026",
+      "valor_estimado": "Não informado (varia conforme o desafio específico)",
+      "url": "https://eic.ec.europa.eu/eic-funding-opportunities/eic-accelerator_en",
+      "tipo": "subvenção | financiamento",
+      "pais": "União Europeia",
+      "fonte": "EIC Accelerator - EU",
+      "relevancia_agro": "media",
+      "palavras_chave_identificadas": [
+        "sustentabilidade",
+        "inovação agrícola",
+        "tecnologias digitais",
+        "escala",
+        "alto risco"
+      ],
+      "score_aderencia": 8,
+      "classificacao": "Alta Aderência",
+      "cor": "verde",
+      "pode_entrar_sozinha": false,
+      "precisa_parceiro": true,
+      "tipo_parceiro_necessario": "consórcio",
+      "pontos_fortes": [
+        "Foco em agricultura digital e sustentável alinhado com o edital",
+        "Infraestrutura de testes em ambiente real (Farm Lab) para validação de soluções",
+        "Expertise em tecnologias digitais como IA, IoT, Robótica e sensoriamento remoto",
+        "Parceria com EMBRAPA, importante ICT para fortalecer proposta"
+      ],
+      "gaps": [
+        "Localização no Brasil, enquanto o edital é da União Europeia, pode exigir parceiros europeus",
+        "Valor estimado e prazos variam conforme desafio, exigindo adaptação e monitoramento constante"
+      ],
+      "acao_recomendada": "Buscar parceiro e submeter",
+      "justificativa": "O perfil da Agnest Farm Lab está fortemente alinhado com os temas do edital, especialmente em inovação agrícola e sustentabilidade. Contudo, a necessidade de participação em consórcios e a localização fora da UE indicam a importância de buscar parceiros europeus para aumentar as chances de sucesso."
+    }
+  ]
+}

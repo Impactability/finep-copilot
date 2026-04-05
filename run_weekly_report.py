@@ -16,8 +16,9 @@ if not api_key:
     print("❌ OPENAI_API_KEY não configurada!")
     sys.exit(1)
 
-from edital_hunter import run_edital_hunt, save_results
+from edital_hunter import run_edital_hunt, save_results, run_edital_hunt_from_db
 from email_reporter import gerar_e_enviar_relatorio
+from fontes_manager import descobrir_novas_fontes, adicionar_fontes_sugeridas
 
 def main():
     print("\n" + "="*60)
@@ -26,9 +27,21 @@ def main():
     print(f"   {datetime.now().strftime('%d/%m/%Y %H:%M')}")
     print("="*60)
 
-    # 1. Buscar editais
-    print("\n📡 FASE 1: Buscando editais em fontes nacionais e internacionais...")
-    editais = run_edital_hunt()
+    # 0. Descobrir novas fontes automaticamente (a cada execução semanal)
+    print("\n🤖 FASE 0: Descobrindo novas fontes com IA...")
+    try:
+        novas = descobrir_novas_fontes()
+        if novas:
+            n = adicionar_fontes_sugeridas(novas)
+            print(f"  ✅ {n} novas fontes adicionadas como pendentes de aprovação")
+        else:
+            print("  ℹ️  Nenhuma nova fonte descoberta")
+    except Exception as e:
+        print(f"  ⚠️  Erro na descoberta de fontes: {e}")
+
+    # 1. Buscar editais usando fontes do banco de dados
+    print("\n📡 FASE 1: Buscando editais nas fontes cadastradas...")
+    editais = run_edital_hunt_from_db()
 
     if not editais:
         print("\n⚠️  Nenhum edital encontrado. Enviando e-mail de aviso...")

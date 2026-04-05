@@ -5,6 +5,12 @@ import json
 from datetime import datetime
 import pandas as pd
 import plotly.graph_objects as go
+from fontes_manager import (
+    carregar_fontes, salvar_fontes, adicionar_fonte, remover_fonte,
+    toggle_fonte, get_fontes_ativas, verificar_todas_fontes,
+    verificar_status_fonte, descobrir_novas_fontes,
+    adicionar_fontes_sugeridas, aprovar_fonte_sugerida, get_estatisticas
+)
 from utils import (
     extract_pdf_text,
     analyze_edital_with_ai,
@@ -107,7 +113,8 @@ with st.sidebar:
             "🤝 Recomendador de Arranjos",
             "👥 Banco de Parceiros",
             "📝 Gerador de Proposta",
-            "📥 Exportar Resultados"
+            "📥 Exportar Resultados",
+            "🌐 Gerenciador de Fontes"
         ]
     )
     
@@ -885,6 +892,329 @@ elif page == "📥 Exportar Resultados":
                 st.error(f"❌ Erro: {str(e)}")
         else:
             st.warning("⚠️ Complete todas as seções para gerar relatório completo")
+
+# ─── GERENCIADOR DE FONTES ───────────────────────────────────────────────────
+elif page == "🌐 Gerenciador de Fontes":
+    st.markdown('<h2 class="section-header">🌐 Gerenciador de Fontes de Editais</h2>', unsafe_allow_html=True)
+    st.markdown("Gerencie as fontes monitoradas semanalmente pelo agente de busca. Adicione novas URLs, verifique o status e aprove sugestões automáticas do agente.")
+
+    # ── Estatísticas ──
+    stats = get_estatisticas()
+    db = carregar_fontes()
+    fontes_todas = db.get("fontes", [])
+
+    col_s1, col_s2, col_s3, col_s4, col_s5 = st.columns(5)
+    with col_s1:
+        st.metric("Total de Fontes", stats["total"])
+    with col_s2:
+        st.metric("🟢 Com Edital Ativo", stats["com_edital_ativo"])
+    with col_s3:
+        st.metric("⚪ Não Verificadas", stats["nao_verificadas"])
+    with col_s4:
+        st.metric("🤖 Sugestões Pendentes", stats["pendentes_aprovacao"])
+    with col_s5:
+        st.metric("✅ Ativas", stats["ativas"])
+
+    st.markdown("---")
+
+    # ── Abas ──
+    tab_painel, tab_adicionar, tab_sugestoes, tab_verificar = st.tabs([
+        "📋 Painel de Status",
+        "➕ Adicionar Nova Fonte",
+        "🤖 Sugestões do Agente",
+        "🔄 Verificar Status"
+    ])
+
+    # ── Tab 1: Painel de Status ──
+    with tab_painel:
+        st.markdown("### 📋 Todas as Fontes Monitoradas")
+
+        # Filtros
+        col_f1, col_f2, col_f3 = st.columns(3)
+        with col_f1:
+            filtro_cat = st.selectbox("Filtrar por categoria", ["Todas", "nacional", "internacional", "privado"])
+        with col_f2:
+            filtro_status = st.selectbox("Filtrar por status", ["Todas", "Com edital ativo", "Sem edital", "Não verificada"])
+        with col_f3:
+            filtro_ativo = st.selectbox("Filtrar por ativação", ["Todas", "Ativas", "Inativas"])
+
+        # Aplicar filtros
+        fontes_filtradas = fontes_todas
+        if filtro_cat != "Todas":
+            fontes_filtradas = [f for f in fontes_filtradas if f.get("categoria") == filtro_cat]
+        if filtro_status == "Com edital ativo":
+            fontes_filtradas = [f for f in fontes_filtradas if f.get("edital_ativo") is True]
+        elif filtro_status == "Sem edital":
+            fontes_filtradas = [f for f in fontes_filtradas if f.get("edital_ativo") is False]
+        elif filtro_status == "Não verificada":
+            fontes_filtradas = [f for f in fontes_filtradas if f.get("ultima_verificacao") is None]
+        if filtro_ativo == "Ativas":
+            fontes_filtradas = [f for f in fontes_filtradas if f.get("ativo", True)]
+        elif filtro_ativo == "Inativas":
+            fontes_filtradas = [f for f in fontes_filtradas if not f.get("ativo", True)]
+
+        st.markdown(f"**{len(fontes_filtradas)} fonte(s) encontrada(s)**")
+        st.markdown("")
+
+        # Cards de fontes
+        for fonte in fontes_filtradas:
+            # Determinar indicador de status
+            edital_ativo = fonte.get("edital_ativo")
+            verificada = fonte.get("ultima_verificacao") is not None
+            ativo = fonte.get("ativo", True)
+            pendente = fonte.get("pendente_aprovacao", False)
+
+            if not ativo:
+                bolinha = "⚫"
+                status_txt = "Inativa"
+                cor_borda = "#9E9E9E"
+            elif pendente:
+                bolinha = "🟡"
+                status_txt = "Pendente aprovação"
+                cor_borda = "#F57F17"
+            elif not verificada:
+                bolinha = "⚪"
+                status_txt = "Não verificada"
+                cor_borda = "#BDBDBD"
+            elif edital_ativo:
+                bolinha = "🟢"
+                status_txt = "Edital ativo"
+                cor_borda = "#2E7D32"
+            else:
+                bolinha = "🔴"
+                status_txt = "Sem edital ativo"
+                cor_borda = "#C62828"
+
+            ultima_verif = fonte.get("ultima_verificacao")
+            if ultima_verif:
+                try:
+                    dt = datetime.fromisoformat(ultima_verif)
+                    ultima_verif_fmt = dt.strftime("%d/%m/%Y %H:%M")
+                except:
+                    ultima_verif_fmt = ultima_verif[:16]
+            else:
+                ultima_verif_fmt = "Nunca verificada"
+
+            resumo = fonte.get("resumo_status", fonte.get("descricao", ""))
+            total_enc = fonte.get("total_editais_encontrados", 0)
+
+            with st.container():
+                st.markdown(
+                    f"""
+                    <div style="border:1px solid {cor_borda};border-left:5px solid {cor_borda};
+                                border-radius:8px;padding:14px 18px;margin-bottom:10px;
+                                background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                            <div style="flex:1;">
+                                <span style="font-size:20px;margin-right:8px;">{bolinha}</span>
+                                <strong style="font-size:15px;color:#1a1a1a;">{fonte['nome']}</strong>
+                                <span style="margin-left:10px;background:#EEE;color:#555;padding:2px 8px;
+                                            border-radius:10px;font-size:11px;">{fonte.get('categoria','').upper()}</span>
+                                <span style="margin-left:6px;background:#E3F2FD;color:#1565C0;padding:2px 8px;
+                                            border-radius:10px;font-size:11px;">{fonte.get('tipo','')}</span>
+                                <span style="margin-left:6px;background:#F3E5F5;color:#6A1B9A;padding:2px 8px;
+                                            border-radius:10px;font-size:11px;">🌍 {fonte.get('pais','')}</span>
+                            </div>
+                            <div style="text-align:right;font-size:12px;color:#888;">
+                                <div><strong>{status_txt}</strong></div>
+                                <div>Última verificação: {ultima_verif_fmt}</div>
+                                <div>Editais encontrados: {total_enc}</div>
+                            </div>
+                        </div>
+                        <div style="margin-top:8px;font-size:13px;color:#555;">{resumo}</div>
+                        <div style="margin-top:6px;">
+                            <a href="{fonte['url']}" target="_blank" style="font-size:12px;color:#1976D2;
+                               text-decoration:none;">🔗 {fonte['url'][:70]}{'...' if len(fonte['url'])>70 else ''}</a>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                col_btn1, col_btn2, col_btn3, _ = st.columns([1, 1, 1, 4])
+                with col_btn1:
+                    label_toggle = "⏸ Desativar" if ativo and not pendente else "▶ Ativar"
+                    if st.button(label_toggle, key=f"toggle_{fonte['id']}", use_container_width=True):
+                        res = toggle_fonte(fonte["id"])
+                        st.success(res["mensagem"])
+                        st.rerun()
+                with col_btn2:
+                    if st.button("🗑 Remover", key=f"remove_{fonte['id']}", use_container_width=True):
+                        res = remover_fonte(fonte["id"])
+                        st.success(res["mensagem"])
+                        st.rerun()
+                with col_btn3:
+                    if pendente:
+                        if st.button("✅ Aprovar", key=f"aprovar_{fonte['id']}", use_container_width=True):
+                            res = aprovar_fonte_sugerida(fonte["id"])
+                            st.success(res["mensagem"])
+                            st.rerun()
+
+    # ── Tab 2: Adicionar Nova Fonte ──
+    with tab_adicionar:
+        st.markdown("### ➕ Adicionar Nova Fonte Manualmente")
+        st.markdown("Adicione qualquer URL de edital público ou privado, nacional ou internacional.")
+
+        with st.form("form_nova_fonte"):
+            col_a1, col_a2 = st.columns(2)
+            with col_a1:
+                nome_nova = st.text_input("Nome da Fonte *", placeholder="Ex: FAPEMIG – Editais de Pesquisa")
+                url_nova = st.text_input("URL *", placeholder="https://www.fapemig.br/editais")
+                tipo_novo = st.selectbox("Tipo", ["subvenção", "financiamento", "pesquisa", "prêmio", "aceleração", "inovação", "agro", "outro"])
+            with col_a2:
+                pais_novo = st.text_input("País / Região", placeholder="Brasil", value="Brasil")
+                categoria_nova = st.selectbox("Categoria", ["nacional", "internacional", "privado"])
+                descricao_nova = st.text_area("Descrição", placeholder="Breve descrição da fonte...", height=100)
+
+            submitted = st.form_submit_button("➕ Adicionar Fonte", use_container_width=True, type="primary")
+            if submitted:
+                if nome_nova and url_nova:
+                    res = adicionar_fonte(
+                        nome=nome_nova, url=url_nova, tipo=tipo_novo,
+                        pais=pais_novo, categoria=categoria_nova,
+                        descricao=descricao_nova, adicionado_por="usuario"
+                    )
+                    if res["sucesso"]:
+                        st.success(f"✅ {res['mensagem']}")
+                        st.rerun()
+                    else:
+                        st.error(f"❌ {res['mensagem']}")
+                else:
+                    st.error("❌ Nome e URL são obrigatórios.")
+
+        st.markdown("---")
+        st.markdown("### 💡 Exemplos de Fontes para Adicionar")
+        exemplos = [
+            ("FAPERJ – Editais", "https://www.faperj.br/editais", "pesquisa", "Brasil"),
+            ("FAPEMIG – Chamadas", "https://fapemig.br/pt/chamadas", "pesquisa", "Brasil"),
+            ("FAPERGS – Editais", "https://fapergs.rs.gov.br/editais", "pesquisa", "Brasil"),
+            ("EIT Food – Calls", "https://www.eitfood.eu/opportunities", "inovação", "União Europeia"),
+            ("PRIMA Programme", "https://prima-med.org/calls-for-proposals/", "pesquisa", "União Europeia"),
+            ("USDA SBIR/STTR", "https://nifa.usda.gov/grants", "pesquisa", "EUA"),
+        ]
+        for nome_ex, url_ex, tipo_ex, pais_ex in exemplos:
+            with st.expander(f"📌 {nome_ex}"):
+                st.code(url_ex)
+                st.caption(f"Tipo: {tipo_ex} | País: {pais_ex}")
+                if st.button(f"Adicionar {nome_ex}", key=f"add_ex_{nome_ex}"):
+                    res = adicionar_fonte(nome_ex, url_ex, tipo_ex, pais_ex,
+                                         "internacional" if pais_ex != "Brasil" else "nacional")
+                    if res["sucesso"]:
+                        st.success(f"✅ {res['mensagem']}")
+                        st.rerun()
+                    else:
+                        st.warning(res["mensagem"])
+
+    # ── Tab 3: Sugestões do Agente ──
+    with tab_sugestoes:
+        st.markdown("### 🤖 Descoberta Automática de Novas Fontes")
+        st.markdown(
+            "O agente de IA analisa o perfil da Agnest Farm Lab e sugere novas fontes "
+            "de editais relevantes que ainda não estão cadastradas. Você aprova antes de ativar."
+        )
+
+        pendentes = [f for f in fontes_todas if f.get("pendente_aprovacao", False)]
+        if pendentes:
+            st.info(f"🔔 Há **{len(pendentes)} sugestão(ões)** aguardando sua aprovação na aba **Painel de Status**.")
+
+        if st.button("🤖 Descobrir Novas Fontes com IA", type="primary", use_container_width=True):
+            with st.spinner("🔎 O agente está buscando novas fontes relevantes..."):
+                try:
+                    novas = descobrir_novas_fontes()
+                    if novas:
+                        n = adicionar_fontes_sugeridas(novas)
+                        st.success(f"✅ **{n} novas fontes** descobertas e adicionadas como pendentes de aprovação!")
+                        st.markdown("Acesse a aba **Painel de Status** → filtre por 'Pendente aprovação' para revisar e aprovar.")
+                        st.markdown("**Fontes sugeridas:**")
+                        for f in novas[:n]:
+                            st.markdown(f"- 🆕 **{f['nome']}** ({f.get('pais','')}) — {f.get('descricao','')}")
+                            st.caption(f"  🔗 {f.get('url','')}")
+                    else:
+                        st.info("Nenhuma nova fonte foi encontrada. Todas as sugestões já estão cadastradas.")
+                except Exception as e:
+                    st.error(f"❌ Erro na descoberta: {str(e)}")
+
+        st.markdown("---")
+        st.markdown("### 📊 Fontes por Categoria")
+        col_cat1, col_cat2, col_cat3 = st.columns(3)
+        with col_cat1:
+            st.metric("🇧🇷 Nacionais", stats["nacionais"])
+        with col_cat2:
+            st.metric("🌍 Internacionais", stats["internacionais"])
+        with col_cat3:
+            st.metric("🏢 Privadas", stats["privadas"])
+
+    # ── Tab 4: Verificar Status ──
+    with tab_verificar:
+        st.markdown("### 🔄 Verificar Status das Fontes")
+        st.markdown(
+            "Verifica quais fontes estão acessíveis e se possuem editais ativos no momento. "
+            "Cada fonte é visitada e analisada com IA. **Pode levar alguns minutos.**"
+        )
+
+        col_v1, col_v2 = st.columns(2)
+        with col_v1:
+            if st.button("🔄 Verificar Todas as Fontes Ativas", type="primary", use_container_width=True):
+                fontes_ativas = get_fontes_ativas()
+                progress = st.progress(0)
+                status_text = st.empty()
+                resultados = []
+                for i, fonte in enumerate(fontes_ativas):
+                    status_text.text(f"Verificando [{i+1}/{len(fontes_ativas)}]: {fonte['nome']}...")
+                    progress.progress((i + 1) / len(fontes_ativas))
+                    resultado = verificar_status_fonte(fonte)
+                    resultados.append(resultado)
+                    # Atualizar no banco
+                    db_atual = carregar_fontes()
+                    for j, f in enumerate(db_atual["fontes"]):
+                        if f["id"] == fonte["id"]:
+                            db_atual["fontes"][j] = resultado
+                            break
+                    salvar_fontes(db_atual)
+                status_text.text("✅ Verificação concluída!")
+                progress.progress(1.0)
+                ativos = sum(1 for r in resultados if r.get("edital_ativo"))
+                st.success(f"✅ Verificação concluída! **{ativos}/{len(resultados)}** fontes com edital ativo.")
+                st.rerun()
+        with col_v2:
+            fonte_selecionada = st.selectbox(
+                "Verificar fonte específica:",
+                options=[f["id"] for f in fontes_todas if f.get("ativo", True)],
+                format_func=lambda fid: next((f["nome"] for f in fontes_todas if f["id"] == fid), fid)
+            )
+            if st.button("🔍 Verificar Esta Fonte", use_container_width=True):
+                fonte_obj = next((f for f in fontes_todas if f["id"] == fonte_selecionada), None)
+                if fonte_obj:
+                    with st.spinner(f"Verificando {fonte_obj['nome']}..."):
+                        resultado = verificar_status_fonte(fonte_obj)
+                        db_atual = carregar_fontes()
+                        for j, f in enumerate(db_atual["fontes"]):
+                            if f["id"] == fonte_selecionada:
+                                db_atual["fontes"][j] = resultado
+                                break
+                        salvar_fontes(db_atual)
+                    edital = resultado.get("edital_ativo")
+                    if edital:
+                        st.success(f"🟢 **Edital ativo!** {resultado.get('resumo_status','')}")
+                    elif edital is False:
+                        st.warning(f"🔴 **Sem edital ativo.** {resultado.get('resumo_status','')}")
+                    else:
+                        st.info(f"⚪ Não foi possível determinar. Erro: {resultado.get('erro','')}")
+
+        st.markdown("---")
+        st.markdown("### 📅 Histórico de Verificações")
+        verificadas = [f for f in fontes_todas if f.get("ultima_verificacao")]
+        if verificadas:
+            df_verif = pd.DataFrame([{
+                "Fonte": f["nome"],
+                "Status": "🟢 Ativo" if f.get("edital_ativo") else "🔴 Inativo",
+                "Última Verificação": f.get("ultima_verificacao","")[:16].replace("T"," "),
+                "Editais Encontrados": f.get("total_editais_encontrados", 0),
+                "Resumo": f.get("resumo_status", "")[:60]
+            } for f in sorted(verificadas, key=lambda x: x.get("ultima_verificacao",""), reverse=True)])
+            st.dataframe(df_verif, use_container_width=True, hide_index=True)
+        else:
+            st.info("Nenhuma fonte verificada ainda. Clique em 'Verificar Todas' para começar.")
 
 # Footer
 st.markdown("---")
