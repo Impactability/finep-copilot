@@ -59,3 +59,7 @@ Thumbs.db
 *.docx
 uploads/
 temp_pdfs/
+
+# Banco de usuários (dados sensíveis - não commitar)
+users_db.json
+editais_encontrados.json

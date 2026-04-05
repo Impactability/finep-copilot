@@ -3,6 +3,7 @@ import os
 import sys
 from dotenv import load_dotenv
 from ai_client import get_ai_client, get_model_label
+from auth_manager import authenticate, create_user, update_password, delete_user, list_users, get_user_count, ensure_db_exists
 import json
 from datetime import datetime
 import pandas as pd
@@ -87,6 +88,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Garantir banco de usuários inicializado
+ensure_db_exists()
+
 # Initialize session state
 if "edital_data" not in st.session_state:
     st.session_state.edital_data = None
@@ -98,11 +102,69 @@ if "proposal_sections" not in st.session_state:
     st.session_state.proposal_sections = None
 if "partners_db" not in st.session_state:
     st.session_state.partners_db = []
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "current_user" not in st.session_state:
+    st.session_state.current_user = None
+if "login_error" not in st.session_state:
+    st.session_state.login_error = ""
+
+# ─── TELA DE LOGIN ────────────────────────────────────────────────────────────
+if not st.session_state.authenticated:
+    st.markdown("""
+        <style>
+        .login-container { max-width: 420px; margin: 80px auto; padding: 2rem; 
+                           background: #fff; border-radius: 12px; 
+                           box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+        .login-logo { text-align: center; font-size: 3rem; margin-bottom: 0.5rem; }
+        .login-title { text-align: center; color: #2E7D32; font-size: 1.6rem; 
+                       font-weight: bold; margin-bottom: 0.2rem; }
+        .login-sub { text-align: center; color: #666; font-size: 0.95rem; 
+                     margin-bottom: 1.5rem; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    col_l, col_c, col_r = st.columns([1, 2, 1])
+    with col_c:
+        st.markdown('<div class="login-logo">🚀</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-title">FINEP Copilot</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-sub">Agnest Farm Lab Edition</div>', unsafe_allow_html=True)
+        st.markdown("---")
+
+        with st.form("login_form", clear_on_submit=False):
+            username_input = st.text_input("👤 Usuário", placeholder="seu.usuario")
+            password_input = st.text_input("🔒 Senha", type="password", placeholder="••••••••")
+            submitted = st.form_submit_button("🔐 Entrar", use_container_width=True)
+
+            if submitted:
+                user = authenticate(username_input.strip().lower(), password_input)
+                if user:
+                    st.session_state.authenticated = True
+                    st.session_state.current_user = user
+                    st.session_state.login_error = ""
+                    st.rerun()
+                else:
+                    st.session_state.login_error = "❌ Usuário ou senha inválidos."
+
+        if st.session_state.login_error:
+            st.error(st.session_state.login_error)
+
+        st.markdown("<br><div style='text-align:center;color:#aaa;font-size:0.8rem;'>Acesso restrito • HTTPS seguro • Agnest Farm Lab</div>", unsafe_allow_html=True)
+    st.stop()  # Para aqui se não autenticado
 
 # Sidebar
 with st.sidebar:
     st.markdown("## 🚀 FINEP Copilot")
     st.markdown("**Agnest Farm Lab Edition**")
+    st.markdown("---")
+
+    # Usuário logado
+    user = st.session_state.current_user
+    st.markdown(f"👤 **{user['name']}** `{user['role']}`")
+    if st.button("🚪 Sair", use_container_width=True):
+        st.session_state.authenticated = False
+        st.session_state.current_user = None
+        st.rerun()
     st.markdown("---")
     
     st.markdown("### Navegação")
@@ -116,7 +178,8 @@ with st.sidebar:
             "👥 Banco de Parceiros",
             "📝 Gerador de Proposta",
             "📥 Exportar Resultados",
-            "🌐 Gerenciador de Fontes"
+            "🌐 Gerenciador de Fontes",
+            "🔐 Gerenciar Usuários"
         ]
     )
     
@@ -1223,6 +1286,112 @@ elif page == "🌐 Gerenciador de Fontes":
             st.dataframe(df_verif, use_container_width=True, hide_index=True)
         else:
             st.info("Nenhuma fonte verificada ainda. Clique em 'Verificar Todas' para começar.")
+
+# ─── GERENCIAR USUÁRIOS ────────────────────────────────────────────────────────────
+elif page == "🔐 Gerenciar Usuários":
+    st.markdown('<h2 class="section-header">🔐 Gerenciamento de Usuários</h2>', unsafe_allow_html=True)
+    st.markdown("Gerencie os usuários com acesso ao FINEP Copilot. Todos os usuários são administradores e podem contribuir com fontes e editais.")
+
+    current_user = st.session_state.current_user
+    users = list_users()
+
+    # ── Métricas ──
+    col_u1, col_u2 = st.columns(2)
+    with col_u1:
+        st.metric("👥 Total de Usuários", len(users))
+    with col_u2:
+        st.metric("🛡️ Todos Admin", len([u for u in users if u['role'] == 'admin']))
+
+    st.markdown("---")
+
+    tab_lista, tab_criar, tab_senha = st.tabs([
+        "👥 Usuários Cadastrados",
+        "➕ Criar Novo Usuário",
+        "🔑 Alterar Senha"
+    ])
+
+    # ── Aba 1: Lista de usuários ──
+    with tab_lista:
+        st.markdown("### Usuários com Acesso")
+        for u in users:
+            with st.container(border=True):
+                col_a, col_b, col_c = st.columns([3, 2, 1])
+                with col_a:
+                    st.markdown(f"👤 **{u['name']}** &nbsp; `@{u['username']}`")
+                    st.caption(f"✉️ {u['email']} &nbsp;&nbsp; 📅 Criado em {u['created_at'][:10]}")
+                with col_b:
+                    st.markdown(f"🛡️ Papel: **{u['role'].upper()}**")
+                with col_c:
+                    if u['username'] != current_user['username']:
+                        if st.button("🗑️ Remover", key=f"del_{u['username']}"):
+                            ok, msg = delete_user(u['username'], current_user['username'])
+                            if ok:
+                                st.success(msg)
+                                st.rerun()
+                            else:
+                                st.error(msg)
+                    else:
+                        st.caption("👋 Você")
+
+    # ── Aba 2: Criar usuário ──
+    with tab_criar:
+        st.markdown("### Criar Novo Usuário Admin")
+        st.info("🛡️ Todos os novos usuários recebem perfil **Admin** e podem contribuir com fontes, editais e análises.")
+
+        with st.form("form_criar_usuario", clear_on_submit=True):
+            col_f1, col_f2 = st.columns(2)
+            with col_f1:
+                new_name = st.text_input("👤 Nome Completo", placeholder="Maria Silva")
+                new_username = st.text_input("🌟 Username", placeholder="maria.silva")
+            with col_f2:
+                new_email = st.text_input("✉️ E-mail", placeholder="maria@empresa.com")
+                new_password = st.text_input("🔒 Senha Inicial", type="password", placeholder="Mínimo 6 caracteres")
+
+            criar_btn = st.form_submit_button("➕ Criar Usuário", use_container_width=True)
+
+            if criar_btn:
+                if not all([new_name, new_username, new_email, new_password]):
+                    st.error("❌ Preencha todos os campos.")
+                else:
+                    ok, msg = create_user(
+                        username=new_username,
+                        name=new_name,
+                        email=new_email,
+                        password=new_password,
+                        role="admin",
+                        created_by=current_user['username']
+                    )
+                    if ok:
+                        st.success(f"✅ {msg}")
+                        st.balloons()
+                    else:
+                        st.error(f"❌ {msg}")
+
+    # ── Aba 3: Alterar senha ──
+    with tab_senha:
+        st.markdown("### Alterar Sua Senha")
+        with st.form("form_alterar_senha", clear_on_submit=True):
+            senha_atual = st.text_input("🔒 Senha Atual", type="password")
+            nova_senha = st.text_input("🔑 Nova Senha", type="password", placeholder="Mínimo 6 caracteres")
+            confirmar_senha = st.text_input("✅ Confirmar Nova Senha", type="password")
+            alterar_btn = st.form_submit_button("🔑 Alterar Senha", use_container_width=True)
+
+            if alterar_btn:
+                if not all([senha_atual, nova_senha, confirmar_senha]):
+                    st.error("❌ Preencha todos os campos.")
+                elif nova_senha != confirmar_senha:
+                    st.error("❌ As senhas não coincidem.")
+                else:
+                    # Verificar senha atual
+                    check = authenticate(current_user['username'], senha_atual)
+                    if not check:
+                        st.error("❌ Senha atual incorreta.")
+                    else:
+                        ok, msg = update_password(current_user['username'], nova_senha)
+                        if ok:
+                            st.success(f"✅ {msg}")
+                        else:
+                            st.error(f"❌ {msg}")
 
 # Footer
 st.markdown("---")
