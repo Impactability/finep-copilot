@@ -40,8 +40,8 @@ except Exception:
 
 # Page configuration
 st.set_page_config(
-    page_title="FINEP Copilot - Agnest Edition",
-    page_icon="🚀",
+    page_title="Edital Copilot",
+    page_icon="🎯",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -127,8 +127,8 @@ if not st.session_state.authenticated:
     col_l, col_c, col_r = st.columns([1, 2, 1])
     with col_c:
         st.markdown('<div class="login-logo">🚀</div>', unsafe_allow_html=True)
-        st.markdown('<div class="login-title">FINEP Copilot</div>', unsafe_allow_html=True)
-        st.markdown('<div class="login-sub">Agnest Farm Lab Edition</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-title">Edital Copilot</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-sub"></div>', unsafe_allow_html=True)
         st.markdown("---")
 
         with st.form("login_form", clear_on_submit=False):
@@ -149,13 +149,12 @@ if not st.session_state.authenticated:
         if st.session_state.login_error:
             st.error(st.session_state.login_error)
 
-        st.markdown("<br><div style='text-align:center;color:#aaa;font-size:0.8rem;'>Acesso restrito • HTTPS seguro • Agnest Farm Lab</div>", unsafe_allow_html=True)
+        st.markdown("<br><div style='text-align:center;color:#aaa;font-size:0.8rem;'>Acesso restrito • HTTPS seguro</div>", unsafe_allow_html=True)
     st.stop()  # Para aqui se não autenticado
 
 # Sidebar
 with st.sidebar:
-    st.markdown("## 🚀 FINEP Copilot")
-    st.markdown("**Agnest Farm Lab Edition**")
+    st.markdown("## 🎯 Edital Copilot")
     st.markdown("---")
 
     # Usuário logado
@@ -172,6 +171,7 @@ with st.sidebar:
         "Selecione uma seção:",
         [
             "🏠 Início",
+            "📂 Projetos",
             "📊 Dashboard de Oportunidades",
             "🎯 Análise de Aderência",
             "🤝 Recomendador de Arranjos",
@@ -186,9 +186,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### Informações")
     st.info(
-        "**FINEP Copilot** é um assistente estratégico para captura de recursos "
-        "em editais públicos da FINEP, desenvolvido especificamente para a "
-        "Agnest Farm Lab e seu ecossistema de parceiros."
+        "**Edital Copilot** é um assistente estratégico para captura de recursos em editais públicos nacionais e internacionais."
     )
     st.markdown("---")
     try:
@@ -198,19 +196,22 @@ with st.sidebar:
         pass
 
 # Main content
-st.markdown('<h1 class="main-header">🚀 FINEP Copilot - Agnest Edition</h1>', unsafe_allow_html=True)
-st.markdown("Assistente Estratégico de Captura de Recursos em Editais FINEP")
+st.markdown('<h1 class="main-header">🎯 Edital Copilot</h1>', unsafe_allow_html=True)
+st.markdown("Assistente Estratégico de Captura de Recursos em Editais")
 st.markdown("---")
 
 # Page routing
-if page == "🏠 Início":
+if page == "📂 Projetos":
+    from projetos_page import render_projetos_page
+    render_projetos_page(st.session_state.current_user)
+
+elif page == "🏠 Início":
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown('<h2 class="section-header">Bem-vindo ao FINEP Copilot</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 class="section-header">Bem-vindo ao Edital Copilot</h2>', unsafe_allow_html=True)
         st.markdown("""
-        O FINEP Copilot é uma ferramenta inteligente desenvolvida para ajudar a **Agnest Farm Lab** 
-        e sua rede de parceiros a identificar e capturar oportunidades em editais públicos da FINEP.
+        O **Edital Copilot** é uma ferramenta inteligente desenvolvida para ajudar sua equipe a identificar e capturar oportunidades em editais públicos nacionais e internacionais.
         
         ### 🎯 Funcionalidades Principais
         
@@ -231,9 +232,9 @@ if page == "🏠 Início":
         """)
     
     with col2:
-        st.markdown('<h2 class="section-header">Sobre a Agnest Farm Lab</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 class="section-header">Sobre a Impactability / Agnest Farm Lab</h2>', unsafe_allow_html=True)
         st.markdown("""
-        A **Agnest Farm Lab** é um hub de inovação aberta para o setor agrícola, 
+        A **Impactability / Agnest Farm Lab** é um hub de inovação aberta para o setor agrícola, 
         localizado em Jaguariúna/SP, com liderança da EMBRAPA.
         
         ### 🌾 Verticais Temáticas
@@ -371,14 +372,14 @@ elif page == "🎯 Análise de Aderência":
     if not st.session_state.edital_data:
         st.warning("⚠️ Por favor, faça upload de um edital primeiro na seção 'Dashboard de Oportunidades'")
     else:
-        st.markdown("### 📝 Perfil da Agnest Farm Lab / Sua Iniciativa")
+        st.markdown("### 📝 Perfil da Sua Empresa / Iniciativa")
         
         col1, col2 = st.columns(2)
         
         with col1:
             company_name = st.text_input(
                 "Nome da Empresa/Iniciativa",
-                value=st.session_state.company_profile.get("nome_empresa", "Agnest Farm Lab"),
+                value=st.session_state.company_profile.get("nome_empresa", ""),
                 key="nome_empresa"
             )
             cnpj = st.text_input(
@@ -594,7 +595,7 @@ elif page == "🤝 Recomendador de Arranjos":
         st.warning("⚠️ Por favor, complete a análise de aderência primeiro")
     else:
         st.markdown("""
-        Com base na análise de aderência e no perfil da Agnest Farm Lab, 
+        Com base na análise de aderência e no perfil da Impactability / Agnest Farm Lab, 
         esta seção recomenda a melhor estrutura de arranjo para o edital.
         """)
         
@@ -1180,7 +1181,7 @@ elif page == "🌐 Gerenciador de Fontes":
     with tab_sugestoes:
         st.markdown("### 🤖 Descoberta Automática de Novas Fontes")
         st.markdown(
-            "O agente de IA analisa o perfil da Agnest Farm Lab e sugere novas fontes "
+            "O agente de IA analisa o perfil da Impactability / Agnest Farm Lab e sugere novas fontes "
             "de editais relevantes que ainda não estão cadastradas. Você aprova antes de ativar."
         )
 
@@ -1290,7 +1291,7 @@ elif page == "🌐 Gerenciador de Fontes":
 # ─── GERENCIAR USUÁRIOS ────────────────────────────────────────────────────────────
 elif page == "🔐 Gerenciar Usuários":
     st.markdown('<h2 class="section-header">🔐 Gerenciamento de Usuários</h2>', unsafe_allow_html=True)
-    st.markdown("Gerencie os usuários com acesso ao FINEP Copilot. Todos os usuários são administradores e podem contribuir com fontes e editais.")
+    st.markdown("Gerencie os usuários com acesso ao Edital Copilot. Todos os usuários são administradores e podem contribuir com fontes e editais.")
 
     current_user = st.session_state.current_user
     users = list_users()
@@ -1321,6 +1322,9 @@ elif page == "🔐 Gerenciar Usuários":
                     st.caption(f"✉️ {u['email']} &nbsp;&nbsp; 📅 Criado em {u['created_at'][:10]}")
                 with col_b:
                     st.markdown(f"🛡️ Papel: **{u['role'].upper()}**")
+                    email_icon = "📧" if u.get('receber_email') else "🔕"
+                    email_status = "Recebe e-mail semanal" if u.get('receber_email') else "Sem e-mail semanal"
+                    st.caption(f"{email_icon} {email_status}")
                 with col_c:
                     if u['username'] != current_user['username']:
                         if st.button("🗑️ Remover", key=f"del_{u['username']}"):
@@ -1347,6 +1351,12 @@ elif page == "🔐 Gerenciar Usuários":
                 new_email = st.text_input("✉️ E-mail", placeholder="maria@empresa.com")
                 new_password = st.text_input("🔒 Senha Inicial", type="password", placeholder="Mínimo 6 caracteres")
 
+            new_receber_email = st.checkbox(
+                "📧 Receber relatório semanal de editais por e-mail",
+                value=True,
+                help="O usuário receberá toda segunda-feira um e-mail com os editais mais aderentes ao perfil da empresa."
+            )
+
             criar_btn = st.form_submit_button("➕ Criar Usuário", use_container_width=True)
 
             if criar_btn:
@@ -1359,7 +1369,8 @@ elif page == "🔐 Gerenciar Usuários":
                         email=new_email,
                         password=new_password,
                         role="admin",
-                        created_by=current_user['username']
+                        created_by=current_user['username'],
+                        receber_email=new_receber_email
                     )
                     if ok:
                         st.success(f"✅ {msg}")
@@ -1397,11 +1408,10 @@ elif page == "🔐 Gerenciar Usuários":
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #666; font-size: 0.9rem;">
-    <p>🚀 <strong>FINEP Copilot - Agnest Edition</strong></p>
-    <p>Assistente Estratégico de Captura de Recursos em Editais FINEP</p>
-    <p>Desenvolvido para a Agnest Farm Lab e seu ecossistema de parceiros</p>
+    <p>🎯 <strong>Edital Copilot</strong></p>
+    <p>Assistente Estratégico de Captura de Recursos em Editais</p>
     <p style="margin-top: 1rem;">
-        <a href="https://www.agnestfarmlab.com" target="_blank">Agnest Farm Lab</a> | 
+        <a href="https://www.impactability.com.br" target="_blank">Impactability</a> | 
         <a href="https://www.finep.gov.br" target="_blank">FINEP</a> | 
         <a href="https://www.embrapa.br" target="_blank">EMBRAPA</a>
     </p>

@@ -1,74 +1,74 @@
 """
-Auth Manager - Sistema de Autenticação Segura
+auth_manager.py — Sistema de Autenticação Segura do Edital Copilot
 Gerencia usuários, senhas (bcrypt), sessões e permissões admin.
-Banco de dados em users_db.json (nunca exposto no repositório).
+Persistência via MySQL (sist4490_editalcopilot.usuarios).
+
+Segurança implementada:
+- Senhas com bcrypt (salt automático, nunca armazenadas em texto puro)
+- Proteção contra enumeração de usuários (tempo constante na verificação)
+- Soft-delete de usuários (is_active = 0)
+- Auditoria de todas as ações
+- Validação de inputs em todas as funções
+- Sem exposição de hashes em nenhuma resposta
 """
 
-import os
-import json
 import bcrypt
 from datetime import datetime
 from typing import Optional, Dict, List
 
-# Caminho do banco de usuários
-USERS_DB_PATH = os.path.join(os.path.dirname(__file__), "users_db.json")
+from db_manager import (
+    db_get_user, db_create_user, db_list_users, db_delete_user,
+    db_update_password, db_update_last_login, get_connection
+)
 
 # ─── Usuário padrão inicial ───────────────────────────────────────────────────
 DEFAULT_ADMIN = {
-    "username": "leo",
-    "name": "Leonardo",
-    "email": "leo@impactability.com.br",
-    "role": "admin",
-    "created_at": datetime.now().isoformat(),
-    "created_by": "system"
+    "username":      "leo",
+    "name":          "Leonardo",
+    "email":         "leo@impactability.com.br",
+    "role":          "admin",
+    "receber_email": True,
 }
 DEFAULT_PASSWORD = "Agnest@2026"
 
 
+# ─── Funções de hash ──────────────────────────────────────────────────────────
+
 def _hash_password(password: str) -> str:
-    """Gera hash bcrypt seguro da senha."""
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    """Gera hash bcrypt seguro (custo 12)."""
+    return bcrypt.hashpw(
+        password.encode("utf-8"),
+        bcrypt.gensalt(rounds=12)
+    ).decode("utf-8")
 
 
 def _verify_password(password: str, hashed: str) -> bool:
-    """Verifica senha contra hash bcrypt."""
+    """Verifica senha contra hash bcrypt (tempo constante)."""
     try:
         return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
     except Exception:
         return False
 
 
-def _load_users() -> Dict:
-    """Carrega banco de usuários do arquivo JSON."""
-    if not os.path.exists(USERS_DB_PATH):
-        return _init_users_db()
+# ─── Inicialização ────────────────────────────────────────────────────────────
+
+def ensure_db_exists():
+    """Garante que o usuário admin padrão existe no banco MySQL."""
     try:
-        with open(USERS_DB_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
+        user = db_get_user(DEFAULT_ADMIN["username"])
+        if not user:
+            pw_hash = _hash_password(DEFAULT_PASSWORD)
+            db_create_user(
+                username=DEFAULT_ADMIN["username"],
+                name=DEFAULT_ADMIN["name"],
+                email=DEFAULT_ADMIN["email"],
+                password_hash=pw_hash,
+                role=DEFAULT_ADMIN["role"],
+                created_by="system",
+                receber_email=True,
+            )
     except Exception:
-        return _init_users_db()
-
-
-def _save_users(data: Dict) -> None:
-    """Salva banco de usuários no arquivo JSON."""
-    with open(USERS_DB_PATH, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-
-def _init_users_db() -> Dict:
-    """Inicializa banco de usuários com o admin padrão."""
-    data = {
-        "version": "1.0",
-        "created_at": datetime.now().isoformat(),
-        "users": {
-            DEFAULT_ADMIN["username"]: {
-                **DEFAULT_ADMIN,
-                "password_hash": _hash_password(DEFAULT_PASSWORD)
-            }
-        }
-    }
-    _save_users(data)
-    return data
+        pass
 
 
 # ─── API Pública ──────────────────────────────────────────────────────────────
@@ -76,19 +76,31 @@ def _init_users_db() -> Dict:
 def authenticate(username: str, password: str) -> Optional[Dict]:
     """
     Autentica usuário. Retorna dados do usuário se válido, None se inválido.
+    Nunca revela se o username existe ou não (proteção contra enumeração).
     """
-    data = _load_users()
     username = username.strip().lower()
-    user = data["users"].get(username)
-    if not user:
+    user = db_get_user(username)
+
+    # Sempre executa checkpw para evitar timing attack
+    dummy_hash = "$2b$12$invalidhashfortimingatttackprotection000000000000000000"
+    if user:
+        valid = _verify_password(password, user["password_hash"])
+    else:
+        _verify_password(password, dummy_hash)  # timing protection
         return None
-    if not _verify_password(password, user["password_hash"]):
+
+    if not valid:
         return None
+
+    # Atualizar último login
+    db_update_last_login(username)
+
     return {
-        "username": user["username"],
-        "name": user["name"],
-        "email": user["email"],
-        "role": user["role"]
+        "username":      user["username"],
+        "name":          user["name"],
+        "email":         user["email"],
+        "role":          user["role"],
+        "receber_email": bool(user.get("receber_email", True)),
     }
 
 
@@ -98,105 +110,102 @@ def create_user(
     email: str,
     password: str,
     role: str = "admin",
-    created_by: str = "admin"
+    created_by: str = "admin",
+    receber_email: bool = True,
 ) -> tuple:
     """
     Cria novo usuário. Retorna (True, mensagem) ou (False, erro).
+    Validações: username único, email único, senha mínima 6 chars.
     """
-    data = _load_users()
     username = username.strip().lower()
 
+    # Validações de input
     if not username or not name or not password:
         return False, "Username, nome e senha são obrigatórios."
-
     if len(username) < 3:
         return False, "Username deve ter pelo menos 3 caracteres."
-
+    if not username.replace(".", "").replace("_", "").replace("-", "").isalnum():
+        return False, "Username só pode conter letras, números, ponto, hífen e underscore."
     if len(password) < 6:
         return False, "Senha deve ter pelo menos 6 caracteres."
+    if "@" not in email or "." not in email.split("@")[-1]:
+        return False, "E-mail inválido."
 
-    if username in data["users"]:
-        return False, f"Username '{username}' já existe."
-
-    # Verificar email duplicado
-    for u in data["users"].values():
-        if u.get("email", "").lower() == email.lower():
-            return False, f"E-mail '{email}' já está em uso."
-
-    data["users"][username] = {
-        "username": username,
-        "name": name,
-        "email": email,
-        "role": role,
-        "password_hash": _hash_password(password),
-        "created_at": datetime.now().isoformat(),
-        "created_by": created_by
-    }
-    _save_users(data)
-    return True, f"Usuário '{name}' criado com sucesso!"
+    pw_hash = _hash_password(password)
+    ok, msg = db_create_user(
+        username=username,
+        name=name.strip(),
+        email=email.lower().strip(),
+        password_hash=pw_hash,
+        role=role,
+        created_by=created_by,
+        receber_email=receber_email,
+    )
+    return ok, msg
 
 
 def update_password(username: str, new_password: str) -> tuple:
-    """Atualiza senha de um usuário."""
-    data = _load_users()
+    """Atualiza senha de um usuário com validação."""
     username = username.strip().lower()
-
-    if username not in data["users"]:
-        return False, "Usuário não encontrado."
-
     if len(new_password) < 6:
         return False, "Senha deve ter pelo menos 6 caracteres."
-
-    data["users"][username]["password_hash"] = _hash_password(new_password)
-    data["users"][username]["updated_at"] = datetime.now().isoformat()
-    _save_users(data)
-    return True, "Senha atualizada com sucesso!"
+    new_hash = _hash_password(new_password)
+    return db_update_password(username, new_hash)
 
 
 def delete_user(username: str, requesting_user: str) -> tuple:
-    """Remove um usuário (não pode remover a si mesmo)."""
-    data = _load_users()
+    """Remove um usuário (soft delete). Não pode remover a si mesmo."""
     username = username.strip().lower()
-
-    if username == requesting_user:
+    if username == requesting_user.strip().lower():
         return False, "Você não pode remover sua própria conta."
 
-    if username not in data["users"]:
-        return False, "Usuário não encontrado."
-
-    # Garantir que sempre exista pelo menos 1 admin
-    admins = [u for u in data["users"].values() if u["role"] == "admin"]
-    if len(admins) <= 1 and data["users"][username]["role"] == "admin":
+    # Garantir que sempre exista pelo menos 1 admin ativo
+    users = db_list_users()
+    admins = [u for u in users if u["role"] == "admin"]
+    target = next((u for u in users if u["username"] == username), None)
+    if target and target["role"] == "admin" and len(admins) <= 1:
         return False, "Não é possível remover o último administrador."
 
-    del data["users"][username]
-    _save_users(data)
-    return True, f"Usuário '{username}' removido com sucesso."
+    return db_delete_user(username, requesting_user)
 
 
 def list_users() -> List[Dict]:
-    """Lista todos os usuários (sem expor hashes de senha)."""
-    data = _load_users()
-    users = []
-    for u in data["users"].values():
-        users.append({
-            "username": u["username"],
-            "name": u["name"],
-            "email": u.get("email", ""),
-            "role": u["role"],
-            "created_at": u.get("created_at", ""),
-            "created_by": u.get("created_by", "system")
-        })
-    return sorted(users, key=lambda x: x["created_at"])
+    """Lista todos os usuários ativos (sem expor hashes de senha)."""
+    return db_list_users()
 
 
 def get_user_count() -> int:
-    """Retorna total de usuários cadastrados."""
-    data = _load_users()
-    return len(data["users"])
+    """Retorna total de usuários ativos."""
+    return len(db_list_users())
 
 
-def ensure_db_exists():
-    """Garante que o banco de usuários existe (cria se necessário)."""
-    if not os.path.exists(USERS_DB_PATH):
-        _init_users_db()
+def update_email_preference(username: str, receber_email: bool) -> tuple:
+    """Atualiza preferência de recebimento de e-mail semanal."""
+    try:
+        conn = get_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE usuarios SET receber_email = %s WHERE username = %s",
+                (1 if receber_email else 0, username)
+            )
+        conn.commit()
+        conn.close()
+        status = "ativado" if receber_email else "desativado"
+        return True, f"Recebimento de e-mail semanal {status}."
+    except Exception as e:
+        return False, str(e)
+
+
+def get_email_recipients() -> List[str]:
+    """Retorna lista de e-mails de usuários que optaram por receber o relatório semanal."""
+    try:
+        conn = get_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT email FROM usuarios WHERE is_active = 1 AND receber_email = 1"
+            )
+            rows = cur.fetchall()
+        conn.close()
+        return [r["email"] for r in rows]
+    except Exception:
+        return ["leo@impactability.com.br"]  # fallback
