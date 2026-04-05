@@ -42,8 +42,7 @@ env/
 *~
 .DS_Store
 
-# Streamlit
-.streamlit/
+# Streamlit - incluir config.toml, excluir apenas secrets.toml
 .streamlit/secrets.toml
 
 # Temporary files
