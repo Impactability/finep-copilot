@@ -12,15 +12,10 @@ from datetime import datetime
 from typing import List, Dict, Optional
 from openai import OpenAI
 import time
+from ai_client import get_ai_client
 
-# Initialize OpenAI
-try:
-    import streamlit as st
-    api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
-except Exception:
-    api_key = os.getenv("OPENAI_API_KEY")
-
-client = OpenAI(api_key=api_key)
+# Initialize AI client (Gemini ou OpenAI)
+client, AI_MODEL = get_ai_client()
 
 FONTES_DB_PATH = os.path.join(os.path.dirname(__file__), "fontes_db.json")
 
@@ -147,7 +142,7 @@ Responda APENAS com JSON:
 {{"edital_ativo": true/false, "quantidade_editais": 0, "resumo": "uma frase descrevendo o que foi encontrado"}}
 """
         response = client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model=AI_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.1,
             max_tokens=200
@@ -268,7 +263,7 @@ Responda APENAS com JSON válido. Inclua apenas URLs que você tem certeza que e
     
     try:
         response = client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model=AI_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.4,
             max_tokens=3000

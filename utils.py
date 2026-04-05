@@ -3,15 +3,10 @@ import json
 from openai import OpenAI
 import os
 from typing import Dict, List, Any
+from ai_client import get_ai_client
 
-# Initialize OpenAI client - suporta .env local e Streamlit secrets
-try:
-    import streamlit as st
-    api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
-except Exception:
-    api_key = os.getenv("OPENAI_API_KEY")
-
-client = OpenAI(api_key=api_key)
+# Initialize AI client (Gemini ou OpenAI)
+client, AI_MODEL = get_ai_client()
 
 def extract_pdf_text(pdf_path: str) -> str:
     """Extract text from PDF file using pdfplumber."""
@@ -54,7 +49,7 @@ def analyze_edital_with_ai(pdf_text: str) -> Dict[str, Any]:
     
     try:
         response = client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model=AI_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=1500
@@ -114,7 +109,7 @@ def evaluate_company_adherence(company_profile: Dict, edital_data: Dict) -> Dict
     
     try:
         response = client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model=AI_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.5,
             max_tokens=2000
@@ -162,7 +157,7 @@ def generate_proposal_draft(company_profile: Dict, edital_data: Dict, project_id
     
     try:
         response = client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model=AI_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=3000

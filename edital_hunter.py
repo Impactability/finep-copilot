@@ -11,15 +11,10 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any
 from openai import OpenAI
 import time
+from ai_client import get_ai_client
 
-# Initialize OpenAI
-try:
-    import streamlit as st
-    api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
-except Exception:
-    api_key = os.getenv("OPENAI_API_KEY")
-
-client = OpenAI(api_key=api_key)
+# Initialize AI client (Gemini ou OpenAI)
+client, AI_MODEL = get_ai_client()
 
 # ─── Perfil da Agnest Farm Lab ────────────────────────────────────────────────
 AGNEST_PROFILE = {
@@ -200,7 +195,7 @@ Responda APENAS com JSON válido.
 """
     try:
         response = client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model=AI_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
             max_tokens=2000
@@ -252,7 +247,7 @@ Responda APENAS com JSON válido.
 """
     try:
         response = client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model=AI_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=800

@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import sys
 from dotenv import load_dotenv
+from ai_client import get_ai_client, get_model_label
 import json
 from datetime import datetime
 import pandas as pd
@@ -126,6 +127,12 @@ with st.sidebar:
         "em editais públicos da FINEP, desenvolvido especificamente para a "
         "Agnest Farm Lab e seu ecossistema de parceiros."
     )
+    st.markdown("---")
+    try:
+        model_label = get_model_label()
+        st.success(f"{model_label}")
+    except Exception:
+        pass
 
 # Main content
 st.markdown('<h1 class="main-header">🚀 FINEP Copilot - Agnest Edition</h1>', unsafe_allow_html=True)
