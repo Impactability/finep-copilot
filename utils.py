@@ -4,8 +4,14 @@ from openai import OpenAI
 import os
 from typing import Dict, List, Any
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize OpenAI client - suporta .env local e Streamlit secrets
+try:
+    import streamlit as st
+    api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+except Exception:
+    api_key = os.getenv("OPENAI_API_KEY")
+
+client = OpenAI(api_key=api_key)
 
 def extract_pdf_text(pdf_path: str) -> str:
     """Extract text from PDF file using pdfplumber."""

@@ -22,6 +22,13 @@ from export_docx import (
 # Load environment variables
 load_dotenv()
 
+# Inject Streamlit secrets into os.environ (para compatibilidade)
+try:
+    if "OPENAI_API_KEY" in st.secrets:
+        os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+except Exception:
+    pass
+
 # Page configuration
 st.set_page_config(
     page_title="FINEP Copilot - Agnest Edition",
