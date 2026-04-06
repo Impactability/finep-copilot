@@ -2,6 +2,7 @@ import pdfplumber
 import json
 from openai import OpenAI
 import os
+import re
 from typing import Dict, List, Any
 from ai_client import get_ai_client
 
@@ -19,29 +20,49 @@ def extract_pdf_text(pdf_path: str) -> str:
         raise Exception(f"Erro ao extrair PDF: {str(e)}")
     return text
 
+def clean_json_response(text: str) -> str:
+    """
+    Limpa a resposta da IA para garantir que seja um JSON válido.
+    Remove blocos de código markdown e textos extras.
+    """
+    if not text:
+        return ""
+    
+    # Remover blocos de código markdown (```json ... ``` ou ``` ...)
+    text = re.sub(r'```(?:json)?\s*(.*?)\s*```', r'\1', text, flags=re.DOTALL)
+    
+    # Tentar encontrar o primeiro '{' e o último '}'
+    start = text.find('{')
+    end = text.rfind('}')
+    
+    if start != -1 and end != -1:
+        return text[start:end+1]
+    
+    return text.strip()
+
 def analyze_edital_with_ai(pdf_text: str) -> Dict[str, Any]:
     """
-    Use OpenAI to analyze edital and extract structured information.
+    Use AI to analyze edital and extract structured information.
     """
     prompt = f"""
-    Analise o seguinte edital da FINEP e extraia as informações estruturadas em JSON:
+    Analise o seguinte edital e extraia as informações estruturadas em JSON:
     
-    {pdf_text[:4000]}  # Limit to first 4000 chars to avoid token limits
+    {pdf_text[:6000]}  # Limit to first 6000 chars to avoid token limits
     
-    Retorne um JSON com a seguinte estrutura:
+    Retorne um JSON com a seguinte estrutura EXATA:
     {{
         "titulo": "Título do edital",
         "objetivo": "Objetivo geral",
         "orcamento_total": "Valor total em reais",
-        "linhas_tematicas": ["linha 1", "linha 2", ...],
-        "requisitos_elegibilidade": ["requisito 1", "requisito 2", ...],
+        "linhas_tematicas": ["linha 1", "linha 2"],
+        "requisitos_elegibilidade": ["requisito 1", "requisito 2"],
         "valor_minimo": "Valor mínimo por projeto",
         "valor_maximo": "Valor máximo por projeto",
         "contrapartida_minima": "Percentual mínimo de contrapartida",
         "trl_minimo": "TRL mínimo exigido",
         "trl_maximo": "TRL máximo exigido",
         "prazo_encerramento": "Data de encerramento",
-        "criterios_avaliacao": ["critério 1", "critério 2", ...]
+        "criterios_avaliacao": ["critério 1", "critério 2"]
     }}
     
     Responda APENAS com o JSON válido, sem explicações adicionais.
@@ -51,16 +72,16 @@ def analyze_edital_with_ai(pdf_text: str) -> Dict[str, Any]:
         response = client.chat.completions.create(
             model=AI_MODEL,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
+            temperature=0.2,
             max_tokens=1500
         )
         
         response_text = response.choices[0].message.content
-        # Try to parse JSON
+        cleaned_text = clean_json_response(response_text)
+        
         try:
-            return json.loads(response_text)
+            return json.loads(cleaned_text)
         except json.JSONDecodeError:
-            # If JSON parsing fails, return structured error
             return {
                 "erro": "Não foi possível extrair dados estruturados",
                 "texto_bruto": response_text
@@ -75,7 +96,7 @@ def evaluate_company_adherence(company_profile: Dict, edital_data: Dict) -> Dict
     """
     
     prompt = f"""
-    Você é um especialista em editais FINEP. Avalie a aderência de uma empresa a um edital.
+    Você é um especialista em editais de inovação e fomento. Avalie a aderência de uma empresa a um edital.
     
     PERFIL DA EMPRESA:
     {json.dumps(company_profile, ensure_ascii=False, indent=2)}
@@ -83,7 +104,7 @@ def evaluate_company_adherence(company_profile: Dict, edital_data: Dict) -> Dict
     DADOS DO EDITAL:
     {json.dumps(edital_data, ensure_ascii=False, indent=2)}
     
-    Retorne uma avaliação em JSON com a seguinte estrutura:
+    Retorne uma avaliação em JSON com a seguinte estrutura EXATA:
     {{
         "criterios_binarios": {{
             "natureza_juridica_elegivel": {{"passou": true/false, "mensagem": "..."}},
@@ -111,12 +132,27 @@ def evaluate_company_adherence(company_profile: Dict, edital_data: Dict) -> Dict
         response = client.chat.completions.create(
             model=AI_MODEL,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.5,
+            temperature=0.3,
             max_tokens=2000
         )
         
         response_text = response.choices[0].message.content
-        return json.loads(response_text)
+        cleaned_text = clean_json_response(response_text)
+        
+        try:
+            return json.loads(cleaned_text)
+        except json.JSONDecodeError as e:
+            # Tentar uma segunda vez com temperatura 0 se falhar
+            response = client.chat.completions.create(
+                model=AI_MODEL,
+                messages=[{"role": "user", "content": prompt + "\nPOR FAVOR, RESPONDA APENAS O JSON PURO."}],
+                temperature=0,
+                max_tokens=2000
+            )
+            response_text = response.choices[0].message.content
+            cleaned_text = clean_json_response(response_text)
+            return json.loads(cleaned_text)
+            
     except Exception as e:
         raise Exception(f"Erro ao avaliar aderência: {str(e)}")
 
@@ -126,7 +162,7 @@ def generate_proposal_draft(company_profile: Dict, edital_data: Dict, project_id
     """
     
     prompt = f"""
-    Você é um especialista em redação de propostas para editais FINEP. 
+    Você é um especialista em redação de propostas para editais de inovação. 
     Gere rascunhos das seções de uma proposta baseado nos dados fornecidos.
     
     PERFIL DA EMPRESA:
@@ -138,7 +174,7 @@ def generate_proposal_draft(company_profile: Dict, edital_data: Dict, project_id
     IDEIA DO PROJETO:
     {project_idea}
     
-    Retorne um JSON com as seguintes seções (cada uma com 150-300 palavras):
+    Retorne um JSON com as seguintes seções EXATAS:
     {{
         "resumo_executivo": "...",
         "problema_oportunidade": "...",
@@ -164,22 +200,14 @@ def generate_proposal_draft(company_profile: Dict, edital_data: Dict, project_id
         )
         
         response_text = response.choices[0].message.content
-        return json.loads(response_text)
+        cleaned_text = clean_json_response(response_text)
+        return json.loads(cleaned_text)
     except Exception as e:
         raise Exception(f"Erro ao gerar proposta: {str(e)}")
 
 def calculate_weighted_score(graduated_scores: Dict[str, Dict]) -> float:
     """
     Calculate weighted average of graduated criteria.
-    
-    Weights:
-    - Aderência temática: 25%
-    - Maturidade TRL: 20%
-    - Capacidade técnica: 15%
-    - Histórico P&D: 15%
-    - Contrapartida: 10%
-    - Impacto: 10%
-    - Alinhamento geográfico: 5%
     """
     weights = {
         "aderencia_tematica": 0.25,
@@ -192,12 +220,18 @@ def calculate_weighted_score(graduated_scores: Dict[str, Dict]) -> float:
     }
     
     total_score = 0
+    weight_sum = 0
+    
     for criterion, weight in weights.items():
         if criterion in graduated_scores:
             score = graduated_scores[criterion].get("nota", 5)
             total_score += score * weight
+            weight_sum += weight
     
-    return round(total_score, 2)
+    if weight_sum == 0:
+        return 0.0
+        
+    return round(total_score / weight_sum, 2)
 
 def get_score_classification(score: float) -> tuple[str, str]:
     """
